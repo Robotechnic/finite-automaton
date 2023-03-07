@@ -16,7 +16,7 @@
 :b,a,a,b->1
 :b,b,a,a->1
 :b,b,b,a->2
-:b,b,b,b->2
+:b,b,b,b->1
 :b,b,a,b,b,a->1
 :b,b,a,b,a,b->1
 :b,b,a,a,b,a->2
