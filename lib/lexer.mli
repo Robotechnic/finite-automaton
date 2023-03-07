@@ -20,12 +20,12 @@ val printTokens : token list -> unit
 	@param [1] the list of tokens
 *)
 
-val lex : string -> line list
+val lex : string -> line option * line list * line list
 (**
 	Take a list of tokens as input and return a list of lines or raise an exception if the list of tokens is not well-formed.
 	
 	@param [1] the list of tokens
-	@return the list of lines
+	@return the starting state, the actions lines and the test lines
 *)
 
 val printLines : line list -> unit

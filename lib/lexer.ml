@@ -18,14 +18,17 @@ let displayError file (line, column) message =
   let rec displayLine line =
     if line = 1 then
       let lineString = input_line file in
-      Printf.printf "%s" lineString
+      Printf.printf "%s" lineString, String.length lineString
     else
       let _ = input_line file in
       displayLine (line - 1)
   in let () = Printf.printf "Error : %s\n" message
-  in let () = displayLine line 
-  in let () = Printf.printf "\n%s^\n" (String.make column ' ') in
-  close_in file
+  in let _, l = displayLine line
+  in let () =  if column <> -1 then
+    Printf.printf "\n%s^\n" (String.make column ' ')
+  else 
+    Printf.printf "\n%s\n" (String.make l '^')
+  in close_in file
   
 let nextIs lineString column char =
   if String.length lineString <= column + 1 then
@@ -83,46 +86,51 @@ let rec printTokens = function
   | LITERAL ((line, column), literal) -> Printf.printf "(%s, %d %d)" ("LITERAL->" ^ literal) line column
 in printTokens tokens
 
-let parseStartPoint tokens =
+let parseStartPoint line tokens =
   if List.length tokens < 2 then
-    raise (SyntaxError ((-1, -1), "Not enough tokens"))
+    raise (SyntaxError ((line, -1), "Not enough tokens"))
   else match tokens with
   | LITERAL ((line, column), literal)::tail -> Init ((line, column), literal), tail
   | COMMA(line, column)::_ | ARROW(line, column)::_ | COLON(line, column)::_ -> raise (SyntaxError ((line, column), "Unexpected token"))
   | NEWLINE(line, column)::_ -> raise (SyntaxError ((line, column + 2), "Expected literal after ->"))
   | [] -> failwith "This should not append"
 
-let rec parseTest acc lastLiteral = function
+let rec parseTest line acc lastLiteral = function
   | [] -> 
     if lastLiteral then
-      raise (SyntaxError ((-1, -1), "Expected comma or -> after literal"))
+      raise (SyntaxError ((line, -1), "Expected comma or -> after literal"))
     else
-      raise (SyntaxError ((-1, -1), "Expected literal after comma, : or ->"))
-  | (LITERAL ((_, _), literal))::tail -> parseTest (literal::acc) true tail
+      raise (SyntaxError ((line, -1), "Expected literal after comma, : or ->"))
+  | (LITERAL ((_, _), literal))::tail -> parseTest line (literal::acc) true tail
   | (COMMA (line, column))::tail -> 
     if not lastLiteral then 
       raise (SyntaxError ((line, column), "Expected literal after comma"))
     else 
-      parseTest acc false tail
+      parseTest column acc false tail
   | (ARROW _)::(LITERAL ((line, _), literal))::tail -> Test (line, List.rev acc, literal), tail
   | (ARROW (line, column))::_ -> raise (SyntaxError ((line, column + 2), "Expected literal after ->"))
   | NEWLINE(line, column)::_ -> raise (SyntaxError ((line, column), "Unexpected newline"))
   | (COLON (line, column))::_ -> raise (SyntaxError ((line, column), "Unexpected colon"))
 
-let parseAction tokens =
+let parseAction line tokens =
   if List.length tokens < 5 then
-    raise (SyntaxError ((-1, -1), "Not enough tokens"))
+    raise (SyntaxError ((line, -1), "Not enough tokens"))
   else match tokens with
   | LITERAL ((line, _), literal)::(COLON _)::(LITERAL ((_, _), literal2))::(ARROW _)::(LITERAL ((_, _), literal3))::tail -> Action (line, literal, literal2, literal3), tail
-  | _ -> raise (SyntaxError ((-1, -1), "Action must be of the form literal:literal->literal"))
+  | _ -> raise (SyntaxError ((line, -1), "Action must be of the form literal:literal->literal"))
 
 let rec lexAux acc = function
-  | [] | (NEWLINE _)::[] -> List.rev acc
+  | [] | (NEWLINE _)::[] -> let init, actions, tests = acc in (init, actions, List.rev tests)
   | (NEWLINE _)::l -> begin
+    let init, actions, tests = acc in
     match l with
-    | (COLON _)::tail -> let test, rest = parseTest [] false tail in lexAux (test::acc) rest
-    | (LITERAL _)::_ as l -> let action, rest = parseAction l in lexAux (action::acc) rest
-    | (ARROW _)::tail -> let startPoint, rest = parseStartPoint tail in lexAux (startPoint::acc) rest
+    | (COLON (line,_))::tail -> let test, rest = parseTest line [] false tail in lexAux (init, actions, test::tests) rest
+    | (LITERAL ((line, _), _))::_ as l -> let action, rest = parseAction line l in lexAux (init, action::actions, tests) rest
+    | (ARROW (line,_))::tail -> 
+      if init = None then
+        let startPoint, rest = parseStartPoint line tail in lexAux (Some(startPoint), actions, tests) rest
+      else
+        raise (SyntaxError ((line, -1), "You can only define one start node"))
     | (COMMA _)::_ -> failwith "Unexpected comma"
     | (NEWLINE (line, _))::_ -> Printf.eprintf "Unexpected newline at line %d" line; exit 1
     | _ -> failwith "This should not append"
@@ -132,7 +140,7 @@ let rec lexAux acc = function
 let lex file =
   let tokens = parse file in
   try
-    lexAux [] (appendNewLine 0 0 tokens)
+    lexAux (None,[],[]) (appendNewLine 0 0 tokens)
   with SyntaxError(pos, message) ->
     let () = displayError file pos message in exit 1
 
