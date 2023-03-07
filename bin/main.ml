@@ -3,6 +3,6 @@ open Lexer
 let () = 
   let fileName = "exemples/coffe.txt" in
   let lines = lex fileName in
-  let _, actions, tests = lines in
-  let () = printLines actions in
-  printLines tests
+  let base, actions, tests = lines in
+  let coffee = Automaton.buildAutomaton base actions in
+  Automaton.runTests coffee tests

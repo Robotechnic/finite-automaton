@@ -140,7 +140,11 @@ let rec lexAux acc = function
 let lex file =
   let tokens = parse file in
   try
-    lexAux (None,[],[]) (appendNewLine 0 0 tokens)
+    let init, actions, tests = lexAux (None,[],[]) (appendNewLine 0 0 tokens)
+    in if init = None then
+      let () = Printf.eprintf "You must define a start node" in exit 1
+    else
+      Option.get init, actions, tests
   with SyntaxError(pos, message) ->
     let () = displayError file pos message in exit 1
 
