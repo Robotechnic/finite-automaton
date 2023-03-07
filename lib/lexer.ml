@@ -10,6 +10,7 @@ type line =
   | Init of (int * int) * string
   | Test of int * (string list) * string
   | Action of int * string * string * string
+  | Node of int * string
 
 exception SyntaxError of position * string
 
@@ -125,6 +126,7 @@ let rec lexAux acc = function
     let init, actions, tests = acc in
     match l with
     | (COLON (line,_))::tail -> let test, rest = parseTest line [] false tail in lexAux (init, actions, test::tests) rest
+    | (LITERAL ((line, _), literal))::((NEWLINE _)::_ as tail) -> lexAux (init, (Node(line,literal))::actions, tests) tail
     | (LITERAL ((line, _), _))::_ as l -> let action, rest = parseAction line l in lexAux (init, action::actions, tests) rest
     | (ARROW (line,_))::tail -> 
       if init = None then
@@ -155,4 +157,5 @@ let rec printLines = function
     | Init ((line, column), literal) -> Printf.printf "%d %d Init automaton at %s\n" line column literal
     | Test (line, literals, literal) -> Printf.printf "%d Test Take %s and expect %s\n" line (String.concat ", " literals) literal
     | Action (line, literal, literal2, literal3) -> Printf.printf "%d Action from %s if %s goto %s\n" line literal literal2 literal3
+    | Node (line, literal) -> Printf.printf "%d Final node %s\n" line literal
   end in printLines lines

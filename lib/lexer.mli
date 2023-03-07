@@ -4,6 +4,7 @@ type line =
   | Init of (int * int) * string (* Starting state of the automaton*)
   | Test of int * (string list) * string (* Test line of the automaton *)
   | Action of int * string * string * string (* Action of the automatons *)
+  | Node of int * string
 
 val parse : string -> token list
 (**
