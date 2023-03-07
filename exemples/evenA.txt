@@ -1,0 +1,27 @@
+# When we encouter a we change from state 1 to state 2 and vice versa to know if number of a is even or odd
+1:a->2
+2:a->1
+
+# We ignore all b so we stay in the current state
+1:b->1
+2:b->2
+
+# Here the entry point is 1
+->1
+
+# Tests
+:a,b,b,a->1
+:a,b,a,b->1
+:b,a,b,b->2
+:b,a,a,b->1
+:b,b,a,a->1
+:b,b,b,a->2
+:b,b,b,b->2
+:b,b,a,b,b,a->1
+:b,b,a,b,a,b->1
+:b,b,a,a,b,a->2
+:b,b,a,a,a,b->2
+:b,b,a,a,a,a->1
+:b,b,a,a,b,b->1
+:b,b,a,b,b,b->2
+:b,b,a,b,a,a->2
