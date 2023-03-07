@@ -24,17 +24,19 @@ let buildAutomaton baseState events =
   | Lexer.Init ((line, _), state) -> begin
     let rec buildEvents map = function
     | [] -> map
+     | Lexer.Node(line, literal)::tails
+     (* Ignore _  because it's only used in graphviz to visualise an automatic return to start node*)
+     | Lexer.Action(line, literal, "_", _)::tails-> 
+      if AutomatonEvent.mem literal map then
+        buildEvents map tails
+      else
+        buildEvents (AutomatonEvent.add literal (line, AutomatonEvent.empty) map) tails
     | Lexer.Action(line, from, if_, to_)::tails ->
       if AutomatonEvent.mem from map then
         let events = AutomatonEvent.find from map in
         buildEvents (AutomatonEvent.add from (line, (AutomatonEvent.add if_ to_ (snd events))) map) tails
       else
         buildEvents (AutomatonEvent.add from (line, (AutomatonEvent.singleton if_ to_)) map) tails
-    | Lexer.Node(line, literal)::tails -> 
-      if AutomatonEvent.mem literal map then
-        buildEvents map tails
-      else
-        buildEvents (AutomatonEvent.add literal (line, AutomatonEvent.empty) map) tails
     | _ -> failwith "Lines must be actions"
     in let events = buildEvents AutomatonEvent.empty events 
     in let () = checkAutomatonEvents events

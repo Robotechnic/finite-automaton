@@ -14,7 +14,7 @@
 20:5->coffee
 20:10->coffee
 20:20->coffee
-coffee
+coffee:_->0
 
 :20,10->coffee
 :20,5->coffee
