@@ -1,0 +1,30 @@
+# Here the entry point is false
+->false
+
+# When we encouter a we change from state false to state true and vice versa to know if number of a is even or odd
+false:a->true
+false:b->false
+
+# We ignore all b so we stay in the current state
+true:a->false
+true:b->true
+
+# Tests
+:a,b,b,a->false
+:a,b,a,b->false
+:b,a,b,b->true
+:b,a,a,b->false
+:b,b,a,a->false
+:b,b,b,a->true
+:b,b,b,b->false
+:b,b,a,b,b,a->false
+:b,b,a,b,a,b->false
+:b,b,a,a,b,a->true
+:b,b,a,a,a,b->true
+:b,b,a,a,a,a->false
+:b,b,a,a,b,b->false
+:b,b,a,b,b,b->true
+:b,b,a,b,a,a->true
+
+:a,b,b,a->false
+|a->true

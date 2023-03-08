@@ -1,7 +1,7 @@
 open Lexer
 
 let () = 
-  let fileName = "exemples/coffee.txt" in
+  let fileName = "examples/coffee.txt" in
   let lines = lex fileName in
   let base, actions, tests = lines in
   let () = GraphvizExport.export "coffee.dot" base actions in
