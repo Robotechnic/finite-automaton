@@ -63,7 +63,7 @@ let rec parseLine lineString line column acc =
     else
       raise (SyntaxError ((line, column), "Unexpected character, missing > after -"))
   | ',' -> parseLine lineString line (column + 1) (COMMA (line, column)::acc)
-  | 'a'..'z' | '0'..'9' | '_' -> 
+  | 'a'..'z' | '0'..'9' | 'A'..'Z' | '_' -> 
     let literal, literalEnd = parseLiteral lineString column [] in
     parseLine lineString line literalEnd (LITERAL ((line, column), literal)::acc)
   | '#' -> appendNewLine line column acc
