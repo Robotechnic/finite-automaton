@@ -1,6 +1,6 @@
 open Lexer
 
-let usageString = "Usage : " ^ Sys.argv.(0) ^ " [OPTIONS] [FILE]"
+let usageString = "Usage : " ^ Sys.argv.(0) ^ " [OPTIONS...] [FILE]"
 
 let dotStream = ref stdout
 let fileStream = ref stdin
