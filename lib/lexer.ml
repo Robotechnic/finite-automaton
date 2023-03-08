@@ -17,7 +17,6 @@ type line =
 exception SyntaxError of position * string
 
 let displayError file (line, column) message =
-  let file = open_in file in
   let rec displayLine line =
     if line = 1 then
       let lineString = input_line file in
@@ -26,12 +25,14 @@ let displayError file (line, column) message =
       let _ = input_line file in
       displayLine (line - 1)
   in let () = Printf.printf "Error : %s\n" message
-  in let _, l = displayLine line
-  in let () =  if column <> -1 then
-    Printf.printf "\n%s^\n" (String.make column ' ')
-  else 
-    Printf.printf "\n%s\n" (String.make l '^')
-  in close_in file
+  in if file <> stdin then
+    let () = seek_in file 0
+    in let _, l = displayLine line
+    in if column <> -1 then
+      Printf.printf "\n%s^\n" (String.make column ' ')
+    else 
+      Printf.printf "\n%s\n" (String.make l '^')
+
   
 let nextIs lineString column char =
   if String.length lineString <= column + 1 then
@@ -71,7 +72,6 @@ let rec parseLine lineString line column acc =
   | _ -> raise (SyntaxError ((line, column), "Unexpected character"))
 
 let parse file =
-  let file = open_in file in
   let rec parseLines line acc =
     try
       let lineString = input_line file in
