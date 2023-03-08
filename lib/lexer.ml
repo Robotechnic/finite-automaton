@@ -4,11 +4,13 @@ type token =
   | COLON of position
   | COMMA of position
   | NEWLINE of position
+  | PIPE of position
   | LITERAL of position * string
 
 type line =
   | Init of (int * int) * string
   | Test of int * (string list) * string
+  | MultiTest of int * line list
   | Action of int * string * string * string
   | Node of int * string
 
@@ -65,6 +67,7 @@ let rec parseLine lineString line column acc =
     let literal, literalEnd = parseLiteral lineString column [] in
     parseLine lineString line literalEnd (LITERAL ((line, column), literal)::acc)
   | '#' -> appendNewLine line column acc
+  | '|' -> parseLine lineString line (column + 1) (PIPE (line, column)::acc)
   | _ -> raise (SyntaxError ((line, column), "Unexpected character"))
 
 let parse file =
@@ -85,6 +88,7 @@ let rec printTokens = function
   | COMMA (line, column) -> Printf.printf "(%s, %d %d)" "COMMA" line column
   | NEWLINE (line, column) -> Printf.printf "(%s, %d %d)\n" "NEWLINE" line column
   | LITERAL ((line, column), literal) -> Printf.printf "(%s, %d %d)" ("LITERAL->" ^ literal) line column
+  | PIPE (line, column) -> Printf.printf "(%s, %d %d)" "PIPE" line column
 in printTokens tokens
 
 let parseStartPoint line tokens =
@@ -94,9 +98,24 @@ let parseStartPoint line tokens =
   | LITERAL ((line, column), literal)::tail -> Init ((line, column), literal), tail
   | COMMA(line, column)::_ | ARROW(line, column)::_ | COLON(line, column)::_ -> raise (SyntaxError ((line, column), "Unexpected token"))
   | NEWLINE(line, column)::_ -> raise (SyntaxError ((line, column + 2), "Expected literal after ->"))
+  | PIPE(line, column)::_ -> raise (SyntaxError ((line, column), "Unexpected pipe"))
   | [] -> failwith "This should not append"
 
-let rec parseTest line acc lastLiteral = function
+let rec parseMultiTest line column acc = function
+  | [] -> raise (SyntaxError ((line, column), "Expected literal after pipe"))
+  | LITERAL _ :: _ as tokens -> begin
+    let test, tokens = parseTest line [] false tokens in
+    match test with
+    | Test _ as test -> MultiTest (line, List.rev (test::acc)), tokens
+    | MultiTest (line, tests) -> MultiTest (line, List.append acc tests), tokens
+    | _ -> failwith "This should not append"
+  end
+  | NEWLINE(line, column)::_ -> raise (SyntaxError ((line, column), "Unexpected newline"))
+  | (COLON (line, column))::_ -> raise (SyntaxError ((line, column), "Unexpected colon"))
+  | (PIPE (line, column))::_ -> raise (SyntaxError ((line, column), "Unexpected pipe"))
+  | (COMMA (line, column))::_ -> raise (SyntaxError ((line, column), "Unexpected comma"))
+  | (ARROW (line, column))::_ -> raise (SyntaxError ((line, column), "Unexpected arrow"))
+and parseTest line acc lastLiteral = function
   | [] -> 
     if lastLiteral then
       raise (SyntaxError ((line, -1), "Expected comma or -> after literal"))
@@ -108,10 +127,13 @@ let rec parseTest line acc lastLiteral = function
       raise (SyntaxError ((line, column), "Expected literal after comma"))
     else 
       parseTest column acc false tail
+  | (ARROW _)::(LITERAL (_, literal))::(PIPE (pipeLine, column))::tail -> parseMultiTest line column [Test (pipeLine, List.rev acc, literal)] tail
+  | (ARROW _)::(LITERAL (_, literal))::(NEWLINE _)::(PIPE (pipeLine, column))::tail -> parseMultiTest (pipeLine - 1) column [Test (pipeLine - 1, List.rev acc, literal)] tail
   | (ARROW _)::(LITERAL ((line, _), literal))::tail -> Test (line, List.rev acc, literal), tail
   | (ARROW (line, column))::_ -> raise (SyntaxError ((line, column + 2), "Expected literal after ->"))
   | NEWLINE(line, column)::_ -> raise (SyntaxError ((line, column), "Unexpected newline"))
   | (COLON (line, column))::_ -> raise (SyntaxError ((line, column), "Unexpected colon"))
+  | (PIPE (line, column))::_ -> raise (SyntaxError ((line, column), "Unexpected pipe"))
 
 let parseAction line tokens =
   if List.length tokens < 5 then
@@ -121,7 +143,7 @@ let parseAction line tokens =
   | _ -> raise (SyntaxError ((line, -1), "Action must be of the form literal:literal->literal"))
 
 let rec lexAux acc = function
-  | [] | (NEWLINE _)::[] -> let init, actions, tests = acc in (init, actions, List.rev tests)
+  | [] | (NEWLINE _)::[] -> let init, actions, tests = acc in (init, List.rev actions, List.rev tests)
   | (NEWLINE _)::l -> begin
     let init, actions, tests = acc in
     match l with
@@ -155,7 +177,15 @@ let rec printLines = function
   | line::lines -> let () = begin
     match line with
     | Init ((line, column), literal) -> Printf.printf "%d %d Init automaton at %s\n" line column literal
-    | Test (line, literals, literal) -> Printf.printf "%d Test Take %s and expect %s\n" line (String.concat ", " literals) literal
+    | Test (line, test, result) -> Printf.printf "%d Test Take %s and expect %s\n" line (String.concat ", " test) result
     | Action (line, literal, literal2, literal3) -> Printf.printf "%d Action from %s if %s goto %s\n" line literal literal2 literal3
     | Node (line, literal) -> Printf.printf "%d Final node %s\n" line literal
+    | MultiTest(line, tests) -> (
+      let () = Printf.printf "%d MultiTest : \n" line in 
+      let rec printTests = function
+        | [] -> ()
+        | Test (line, test, result)::tail -> Printf.printf "\t%d Test Take %s and expect %s\n" line (String.concat ", " test) result; printTests tail
+        | _ -> failwith "This should not append"
+      in printTests tests
+    )
   end in printLines lines
