@@ -16,13 +16,21 @@ A simple language to define finite automaton and test them. It is designed to be
 		- [4.3. Single line test cases](#43-single-line-test-cases)
 		- [4.4. Multi test cases](#44-multi-test-cases)
 		- [4.5. Exemple](#45-exemple)
-	- [5. 5 Examples](#5-5-examples)
+	- [5. Examples](#5-examples)
 		- [5.1. 5.1 evenA](#51-51-evena)
 		- [5.2. coffee](#52-coffee)
 
 ## 1. Usage
+```
+usage: finite-automaton.py [OPTIONS...] [FILE]
+```
+|Argument|Description|
+|:---:|:---:|
+| --dot `file` | dump the automaton in graphviz format into `file`. This doesn't check if the bot is valid before dumping allowing to use it as a debugger|
+| -s | Display the substeps of the automaton when running it. This is usefull to debug the automaton and see what is happening.|
+| -t `tests` | Run the test cases given by the `test` argument. It must be a list of test case separated by a `,`.|
 
-TODO
+
 
 ## 2. How to use the language
 ### 2.1. Comments
@@ -149,7 +157,7 @@ When the automaton receive the events 1, 2, 1, 2, it should be in the state c
 When the automaton receive the events 2, 1, it should be in the state b from there when it receive the events 2 it should be in the state c
 ```
 
-## 5. 5 Examples
+## 5. Examples
 ### 5.1. 5.1 evenA
 This automaton will check if the number of `a` is even in a given string.
 
