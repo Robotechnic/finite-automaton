@@ -67,30 +67,31 @@ let buildAutomaton baseState events =
         let () = Printf.eprintf "Error: Base state \"%s\" defined at line %d does not exist in automaton\n" state line in exit 1
   end
 
-let rec runAutomaton automaton = function
+let rec runAutomaton automaton substeps = function
 | [] -> automaton
 | event::tail as actions ->
   let _, events = AutomatonEvent.find automaton.state automaton.events in
   let wildcard = AutomatonEvent.find_opt "_" events in
   if wildcard <> None then
-    runAutomaton {automaton with state = snd (Option.get wildcard)} actions
+    runAutomaton {automaton with state = snd (Option.get wildcard)} substeps actions
   else
     let state = AutomatonEvent.find_opt event events in
     if state = None then 
       let () = Printf.eprintf "Error: Event \"%s\" is not defined for state \"%s\"\n" event automaton.state in exit 1
-    else 
-      runAutomaton {automaton with state = snd (Option.get state)} tail
+    else
+      let () = if substeps then print_endline automaton.state
+      in runAutomaton {automaton with state = snd (Option.get state)} substeps tail
 
-let runTest automaton = function
+let runTest automaton substeps = function
 | Lexer.Action _ | Lexer.Init _ | Lexer.Node _ -> failwith "Test must be a test"
 | Lexer.Test (line, events, expected) ->
-  let result = runAutomaton automaton events in
+  let result = runAutomaton automaton substeps events in
   result.state = expected, line
 | Lexer.MultiTest (line, tests) -> 
   let rec runMultiTest automaton = function
   | [] -> true, line
   | Lexer.Test (testLine, events, expected)::tail ->
-    let result = runAutomaton automaton events in
+    let result = runAutomaton automaton substeps events in
     if result.state = expected then
       runMultiTest result tail
     else
@@ -98,11 +99,11 @@ let runTest automaton = function
   | _ -> failwith "MultiTest must be a list of tests"
   in runMultiTest automaton tests
 
-let rec runTests automaton = function
+let rec runTests automaton substeps = function
 | [] -> ()
 | test::tail ->
-  let pass, line = runTest automaton test in
+  let pass, line = runTest automaton substeps test in
   if pass then
-    runTests automaton tail
+    runTests automaton substeps tail
   else
     let () = Printf.eprintf "Error: Test at line %d failed\n" line in exit 1
