@@ -17,7 +17,7 @@ A simple language to define finite automaton and test them. It is designed to be
 		- [4.4. Multi test cases](#44-multi-test-cases)
 		- [4.5. Exemple](#45-exemple)
 	- [5. Examples](#5-examples)
-		- [5.1. 5.1 evenA](#51-51-evena)
+		- [5.1. evenA](#51-evena)
 		- [5.2. coffee](#52-coffee)
 
 ## 1. Usage
@@ -158,7 +158,7 @@ When the automaton receive the events 2, 1, it should be in the state b from the
 ```
 
 ## 5. Examples
-### 5.1. 5.1 evenA
+### 5.1. evenA
 This automaton will check if the number of `a` is even in a given string.
 
 **Exemples:**
