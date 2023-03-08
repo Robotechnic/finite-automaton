@@ -1,11 +1,20 @@
 type token
 
+type test = string list * string
 type line =
   | Init of (int * int) * string (* Starting state of the automaton*)
-  | Test of int * (string list) * string (* Test line of the automaton *)
-  | MultiTest of int * line list (* MultiTest line of the automaton *)
+  | Test of int * test (* Test line of the automaton *)
+  | MultiTest of int * (int * test) list (* MultiTest line of the automaton *)
   | Action of int * string * string * string (* Action of the automatons *)
   | Node of int * string (* A node is a way to define a terminal node *)
+
+val getPosition : token -> int * int
+(**
+	Return the position of the token in the file.
+	
+	@param [1] the token
+	@return the position of the token in the file
+*)
 
 val parse : in_channel -> token list
 (**

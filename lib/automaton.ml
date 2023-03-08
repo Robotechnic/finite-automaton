@@ -36,7 +36,7 @@ let buildAutomaton baseState events =
   | Lexer.Init ((line, _), state) -> begin
     let rec buildEvents map = function
     | [] -> map
-     | Lexer.Node(line, literal)::tails -> 
+    | Lexer.Node(line, literal)::tails -> 
       if AutomatonEvent.mem literal map then
         buildEvents map tails
       else
@@ -58,7 +58,7 @@ let buildAutomaton baseState events =
           buildEvents (AutomatonEvent.add from (line, (AutomatonEvent.add if_ (actionLine, to_) events)) map) tails
       else
         buildEvents (AutomatonEvent.add from (actionLine, (AutomatonEvent.singleton if_ (actionLine, to_))) map) tails
-    | _ -> failwith "Lines must be actions"
+    | _ -> assert false
     in let events = buildEvents AutomatonEvent.empty events
     in let () = checkAutomatonEvents events
     in if AutomatonEvent.mem state events then
@@ -83,20 +83,19 @@ let rec runAutomaton automaton substeps = function
       in runAutomaton {automaton with state = snd (Option.get state)} substeps tail
 
 let runTest automaton substeps = function
-| Lexer.Action _ | Lexer.Init _ | Lexer.Node _ -> failwith "Test must be a test"
-| Lexer.Test (line, events, expected) ->
+| Lexer.Action _ | Lexer.Init _ | Lexer.Node _ -> assert false
+| Lexer.Test (line, (events, expected)) ->
   let result = runAutomaton automaton substeps events in
   result.state = expected, line
 | Lexer.MultiTest (line, tests) -> 
   let rec runMultiTest automaton = function
   | [] -> true, line
-  | Lexer.Test (testLine, events, expected)::tail ->
+  | (testLine, (events, expected))::tail ->
     let result = runAutomaton automaton substeps events in
     if result.state = expected then
       runMultiTest result tail
     else
       false, testLine
-  | _ -> failwith "MultiTest must be a list of tests"
   in runMultiTest automaton tests
 
 let rec runTests automaton substeps = function
