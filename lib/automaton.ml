@@ -60,7 +60,6 @@ let buildAutomaton baseState events =
         buildEvents (AutomatonEvent.add from (actionLine, (AutomatonEvent.singleton if_ (actionLine, to_))) map) tails
     | _ -> failwith "Lines must be actions"
     in let events = buildEvents AutomatonEvent.empty events
-    in let () = printAutomaton {state = state; events = events};
     in let () = checkAutomatonEvents events
     in if AutomatonEvent.mem state events then
         {state = state; events = events}
