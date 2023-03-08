@@ -1,4 +1,4 @@
-val export : string -> Lexer.line -> Lexer.line list -> unit
+val export : out_channel -> Lexer.line -> Lexer.line list -> unit
 (**
 	Export the automaton described by the given lines into graphviz format.
 

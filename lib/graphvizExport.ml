@@ -1,5 +1,4 @@
-let export fileName base actions =
-  let file = open_out fileName in
+let export file base actions =
   let () = Printf.fprintf file "digraph Automaton {" in
   let () = match base with
   | Lexer.Init(_, from) -> Printf.fprintf file "%s [shape=doublecircle,color=red];" from
@@ -14,5 +13,4 @@ let export fileName base actions =
       in loop rest
     | _ :: rest -> loop rest
   in let () = loop actions in
-  let () = Printf.fprintf file "}" in
-  close_out file
+  Printf.fprintf file "}"
