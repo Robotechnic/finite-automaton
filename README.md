@@ -30,8 +30,6 @@ usage: finite-automaton.py [OPTIONS...] [FILE]
 | -s | Display the substeps of the automaton when running it. This is usefull to debug the automaton and see what is happening.|
 | -t `tests` | Run the test cases given by the `test` argument. It must be a list of test case separated by a `,`.|
 
-
-
 ## 2. How to use the language
 ### 2.1. Comments
 In this language anything that is after a `#` is considered a comment and will be ignored by the parser.
@@ -168,6 +166,8 @@ This automaton will check if the number of `a` is even in a given string.
 - "abaaa" -> true
 - "abbab" -> true
 
+![evenAgraph](/examples/images/evenA.svg?raw=true "EvenA graph")
+
 ### 5.2. coffee
 This automaton is a sort of dumb coffee machine. It will accept payment with coins of 5, 10 or 20 cents. It will give the coffee when the payment is more than 25 cents wihout giving change.
 
@@ -176,3 +176,5 @@ This automaton is a sort of dumb coffee machine. It will accept payment with coi
 - 20,5 -> coffee
 - 10,5 -> 15 (Insufficient payment)
 - 5,5 -> 10 (Insufficient payment)
+
+![coffeeGraph](/examples/images/coffee.svg?raw=true "Coffee graph")
