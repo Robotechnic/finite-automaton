@@ -49,14 +49,25 @@ let nextIs lineString column char =
   else
     String.get lineString (column + 1) = char
 
-let rec parseLiteral lineString column acc =
+let rec parseLiteral line lineString column acc =
   if String.length lineString <= column then
     String.concat "" (List.rev acc), column
   else match String.get lineString column with
   | 'a'..'z' 
+  | 'A'..'Z'
   | '0'..'9'
   | '_' -> 
-    parseLiteral lineString (column + 1) ((String.make 1 (String.get lineString column))::acc)
+    parseLiteral line lineString (column + 1) ((String.make 1 (String.get lineString column))::acc)
+  | '\\' -> (
+    if String.length lineString <= column + 1 then
+      raise (SyntaxError ((line, column), "Expected character after \\"))
+    else
+      match String.get lineString (column + 1) with
+      | '-' | '\\' | ':' | ',' | '|' -> 
+        parseLiteral line lineString (column + 2) ((String.make 1 (String.get lineString (column + 1)))::acc)
+      | _ -> 
+        raise (SyntaxError ((line, column), "Unexpected character after \\"))
+  )
   | _ -> String.concat "" (List.rev acc), column
 
 let appendNewLine line column = function
@@ -76,8 +87,8 @@ let rec parseLine lineString line column acc =
     else
       raise (SyntaxError ((line, column), "Unexpected character, missing > after -"))
   | ',' -> parseLine lineString line (column + 1) (COMMA (line, column)::acc)
-  | 'a'..'z' | '0'..'9' | 'A'..'Z' | '_' -> 
-    let literal, literalEnd = parseLiteral lineString column [] in
+  | 'a'..'z' | '0'..'9' | 'A'..'Z' | '_' | '\\' -> 
+    let literal, literalEnd = parseLiteral line lineString column [] in
     parseLine lineString line literalEnd (LITERAL ((line, column), literal)::acc)
   | '#' -> appendNewLine line column acc
   | '|' -> parseLine lineString line (column + 1) (PIPE (line, column)::acc)
@@ -183,8 +194,8 @@ let rec lexAux acc = function
   | _ -> failwith "Expected newline token"
 
 let lex file =
-  let tokens = parse file in
   try
+    let tokens = parse file in
     let init, actions, tests = lexAux (None,[],[]) (appendNewLine 0 0 tokens)
     in if init = None then
       let () = Printf.eprintf "You must define a start node" in exit 1
