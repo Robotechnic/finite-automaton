@@ -110,7 +110,7 @@ let rec printTokens = function
   | COLON (line, column) -> Printf.printf "(%s, %d %d)" "COLON" line column
   | COMMA (line, column) -> Printf.printf "(%s, %d %d)" "COMMA" line column
   | NEWLINE (line, column) -> Printf.printf "(%s, %d %d)\n" "NEWLINE" line column
-  | LITERAL ((line, column), literal) -> Printf.printf "(%s, %d %d)" ("LITERAL->" ^ literal) line column
+  | LITERAL ((line, column), literal) -> Printf.printf "(%s, %d %d)" ("LITERAL -> " ^ literal) line column
   | PIPE (line, column) -> Printf.printf "(%s, %d %d)" "PIPE" line column
 in printTokens tokens
 
@@ -163,8 +163,11 @@ let parseAction line tokens =
   if List.length tokens < 5 then
     raise (SyntaxError ((line, -1), "Not enough tokens"))
   else match tokens with
-  | LITERAL ((line, _), literal)::(COLON _)::(LITERAL ((_, _), literal2))::(ARROW _)::(LITERAL ((_, _), literal3))::tail ->
+  | LITERAL ((line, _), literal)::(COLON _)::
+    (LITERAL ((_, _), literal2))::(ARROW _)::
+    (LITERAL ((_, _), literal3))::tail ->
     Action (line, literal, literal2, literal3), tail
+
   | _ -> raise (SyntaxError ((line, -1), "Action must be of the form literal:literal->literal"))
 
 let rec lexAux acc = function
@@ -182,13 +185,15 @@ let rec lexAux acc = function
       in lexAux (init, action::actions, tests) rest
     | (ARROW (line,_))::tail -> 
       if init = None then
-        let startPoint, rest = parseStartPoint line tail in lexAux (Some(startPoint), actions, tests) rest
+        let startPoint, rest = parseStartPoint line tail in 
+        lexAux (Some(startPoint), actions, tests) rest
       else
         raise (SyntaxError ((line, -1), "You can only define one start node"))
     | (COMMA _)::_ -> failwith "Unexpected comma"
     | (NEWLINE (line, _))::_ -> 
       let () = Printf.eprintf "Unexpected newline at line %d" line
       in exit 1
+    | (PIPE (line, column))::_ -> raise (SyntaxError ((line, column), "Unexpected pipe"))
     | _ -> assert false
   end
   | _ -> failwith "Expected newline token"
